@@ -1,9 +1,12 @@
 package composeapi.maven_project.MavenComposeAPI;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -35,13 +38,27 @@ public class App
 {
     public static void main( String[] args )
     {
+
+    	Properties props = new Properties();	
+    	try {
+			props.load(new FileInputStream("src/main/resources/config.properties"));
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		} catch (IOException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+    	
     	HttpClient httpClient = new DefaultHttpClient();
         try {
-        	String baseUrl="https://api.compose.io/2016-07/";
-        	String bearerToken = "58b3b76eaa03495dd117b01155d57df4c3eda3ec3ecf1ca64c5d4dafabafe43a";
-        	String mongoVersion = "3.6.8";
-        	String serviceType = "mongodb";
-		    String resp = "";
+        	String baseUrl = props.getProperty("baseUrl");
+        	String bearerToken = props.getProperty("bearerToken");
+        	String mongoVersion = props.getProperty("mongoVersion"); 
+        	String deploymentType = props.getProperty("deploymentType");
+        	String deploymentName = props.getProperty("deploymentName");
+		    
+        	String resp = "";
 		    
 		    /*
 		     * Get Cluster ID
@@ -52,7 +69,7 @@ public class App
 		    String clusterID = "nb";
 		    String clusterName = "kp1-sjc01-c00";
 		    clusterID = getClusterID(myResponse, clusterName);
-		    System.out.println(clusterID);
+		    System.out.println("Cluster ID retrieved: " + clusterID);
 		    
 		    /*
 		     * Get Account ID
@@ -62,7 +79,7 @@ public class App
 		    String accountID = "nb";
 		    String accountName = "";
 		    accountID = getAccountID(myResponse, accountName);
-		    System.out.println(accountID);
+		    System.out.println("Account ID retrieved: " + accountID);
 		    
 		    /*
 		     * Post new mongo service
@@ -70,48 +87,57 @@ public class App
 		    JSONObject j = new JSONObject();
 		    
 		    j.put("deployment", new JSONObject());
-		    j.getJSONObject("deployment").put("name", "test-mongo-deployment-java2");
+		    j.getJSONObject("deployment").put("name", deploymentName);
 		    j.getJSONObject("deployment").put("account_id", accountID);
 		    j.getJSONObject("deployment").put("cluster_id", clusterID);
-		    j.getJSONObject("deployment").put("type", serviceType);
+		    j.getJSONObject("deployment").put("type", deploymentType);
 		    // older version to showcase upgrade
 		    j.getJSONObject("deployment").put("version", mongoVersion);
 
 			resp = postRequest(baseUrl+"deployments", j.toString(), bearerToken);
-			System.out.println(resp);
+			System.out.println("Response from deployment creation: " + resp);
+			//SLEEP 2 mins
+			Thread.sleep(120000);
 		    myResponse = new JSONObject(resp);
 		    String deploymentID = myResponse.getString("id");
 		    String connectionStrings = myResponse.getJSONObject("connection_strings").toString();
 		    
-		    System.out.println(resp);
 		    System.out.println("deployment ID: "+deploymentID);
-		    
+		    System.out.println("connection strings: " + connectionStrings);
 		    /*
 		     * Get Version to upgrade to, if any
 		     */
 		    resp = getRequest(baseUrl+"deployments/"+deploymentID+"/versions",  bearerToken);
-		    if(resp !="no_upgrade") {
-		    	myResponse = new JSONObject(resp);
-			    String upgradeVersion = getUpgradeVersion(myResponse);
-			    System.out.println(upgradeVersion);
+	    	myResponse = new JSONObject(resp);
+		    String upgradeVersion = getUpgradeVersion(myResponse);
+		    if( !upgradeVersion.equalsIgnoreCase("no_upgrade") ) {
+			    System.out.println("Highest version available for inplace upgrade: " + upgradeVersion);
 			    j = new JSONObject();
 			    j.put("deployment", new JSONObject());
 			    j.getJSONObject("deployment").put("version", upgradeVersion);
 			    
 			    resp = patchRequest(baseUrl+"deployments/"+deploymentID+"/versions", j.toString(), bearerToken);
 
+				System.out.println("Response from upgrade request: " + resp);
+				Thread.sleep(120000);
 		    }
 		    
 		    /*
 		     * Delete newly created deployment
 		     */
-//		    resp = deleteRequest(baseUrl+"deployments/"+deploymentID, bearerToken);
-//		    myResponse = new JSONObject(resp);
-//		    String recipeID = myResponse.getString("id");
-//		    System.out.println("Check /recipes/"+recipeID+ "for deprovisioning status");
-//		    resp = getRequest(baseUrl+"recipes/5d5a5a238453964b37b76307",  bearerToken);
-//		    System.out.println(resp);
-		    		    
+		    System.out.println("Deletion URL: "+ baseUrl+"deployments/"+deploymentID);
+		    /*
+		    System.out.println("Excecuting delete for newly created deployment");
+		    resp = deleteRequest(baseUrl+"deployments/"+deploymentID, bearerToken);
+		    System.out.println("Response from delete request " + resp);
+		    myResponse = new JSONObject(resp);
+		    String recipeID = myResponse.getString("id");
+		    deleteRequest(baseUrl+"deployments/"+deploymentID, bearerToken);
+		    System.out.println("Recipe ID from delete request: "+ recipeID);
+		    System.out.println("Checking /recipes/"+recipeID+ " for deprovisioning status");
+		    resp = getRequest(baseUrl+"recipes/"+recipeID,  bearerToken);
+		    System.out.println(resp);
+		    */		    
           System.out.println("----------------------------------------");
 
         } catch (Exception e) {

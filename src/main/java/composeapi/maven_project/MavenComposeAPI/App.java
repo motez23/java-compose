@@ -81,7 +81,7 @@ public class App
 			System.out.println(resp);
 		    myResponse = new JSONObject(resp);
 		    String deploymentID = myResponse.getString("id");
-		    JSONObject connectionStrings = myResponse.getJSONObject("connection_strings");
+		    String connectionStrings = myResponse.getJSONObject("connection_strings").toString();
 		    
 		    System.out.println(resp);
 		    System.out.println("deployment ID: "+deploymentID);

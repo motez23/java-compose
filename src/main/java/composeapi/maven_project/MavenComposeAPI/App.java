@@ -43,6 +43,10 @@ public class App
         	String serviceType = "mongodb";
 		    String resp = "";
 		    
+		    /*
+		     * Get Cluster ID
+		     */
+		    
 		    resp = getRequest(baseUrl+"clusters", bearerToken);
 		    JSONObject myResponse = new JSONObject(resp);
 		    String clusterID = "nb";
@@ -50,7 +54,9 @@ public class App
 		    clusterID = getClusterID(myResponse, clusterName);
 		    System.out.println(clusterID);
 		    
-		    
+		    /*
+		     * Get Account ID
+		     */
 		    resp = getRequest(baseUrl+"accounts", bearerToken);
 		    myResponse = new JSONObject(resp);
 		    String accountID = "nb";
@@ -58,26 +64,31 @@ public class App
 		    accountID = getAccountID(myResponse, accountName);
 		    System.out.println(accountID);
 		    
-		    
+		    /*
+		     * Post new mongo service
+		     */
 		    JSONObject j = new JSONObject();
 		    
-//		    j.put("deployment", new JSONObject());
-//		    j.getJSONObject("deployment").put("name", "test-mongo-deployment-java2");
-//		    j.getJSONObject("deployment").put("account_id", accountID);
-//		    j.getJSONObject("deployment").put("cluster_id", clusterID);
-//		    j.getJSONObject("deployment").put("type", serviceType);
-//		    // older version to showcase upgrade
-//		    j.getJSONObject("deployment").put("version", mongoVersion);
-//
-//			resp = postRequest(baseUrl+"deployments", j.toString(), bearerToken);
-//			System.out.println(resp);
-//		    myResponse = new JSONObject(resp);
-//		    String deploymentID = myResponse.getString("id");
-//		    JSONObject connectionStrings = myResponse.getJSONObject("connection_strings");
-//		    
-//		    System.out.println(resp);
-		    String deploymentID = "5d5a583ac4134322c9e4f2d4";
+		    j.put("deployment", new JSONObject());
+		    j.getJSONObject("deployment").put("name", "test-mongo-deployment-java2");
+		    j.getJSONObject("deployment").put("account_id", accountID);
+		    j.getJSONObject("deployment").put("cluster_id", clusterID);
+		    j.getJSONObject("deployment").put("type", serviceType);
+		    // older version to showcase upgrade
+		    j.getJSONObject("deployment").put("version", mongoVersion);
+
+			resp = postRequest(baseUrl+"deployments", j.toString(), bearerToken);
+			System.out.println(resp);
+		    myResponse = new JSONObject(resp);
+		    String deploymentID = myResponse.getString("id");
+		    JSONObject connectionStrings = myResponse.getJSONObject("connection_strings");
 		    
+		    System.out.println(resp);
+		    System.out.println("deployment ID: "+deploymentID);
+		    
+		    /*
+		     * Get Version to upgrade to, if any
+		     */
 		    resp = getRequest(baseUrl+"deployments/"+deploymentID+"/versions",  bearerToken);
 		    if(resp !="no_upgrade") {
 		    	myResponse = new JSONObject(resp);
@@ -91,16 +102,16 @@ public class App
 
 		    }
 		    
+		    /*
+		     * Delete newly created deployment
+		     */
 //		    resp = deleteRequest(baseUrl+"deployments/"+deploymentID, bearerToken);
 //		    myResponse = new JSONObject(resp);
 //		    String recipeID = myResponse.getString("id");
 //		    System.out.println("Check /recipes/"+recipeID+ "for deprovisioning status");
 //		    resp = getRequest(baseUrl+"recipes/5d5a5a238453964b37b76307",  bearerToken);
 //		    System.out.println(resp);
-		    
-		    resp = getRequest(baseUrl+"deployments/5d5a583ac4134322c9e4f2d4",  bearerToken);
-		    System.out.println(resp);
-		    
+		    		    
           System.out.println("----------------------------------------");
 
         } catch (Exception e) {
@@ -108,8 +119,6 @@ public class App
         } finally {
           httpClient.getConnectionManager().shutdown();
         }
-      
-    	System.out.println( "Hello World!" );
     }
 
 	private static String getUpgradeVersion(JSONObject myResponse) {
